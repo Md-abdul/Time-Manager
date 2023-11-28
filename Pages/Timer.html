@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Circular Timer</title>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        text-align: center;
+        margin: 50px;
+        background-image: url("../assects/timer.jpg");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+
+      #timer {
+        font-size: 2em;
+        margin-bottom: 20px;
+      }
+
+      #timerButtons {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-gap: 10px;
+        max-width: 200px;
+        margin: 0 auto;
+      }
+
+      .timer-button {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: #3498db;
+        color: #fff;
+        font-size: 1.5em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      .timer-button:hover {
+        background-color: #2980b9;
+      }
+
+      #startButton {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: #27ae60;
+        color: #fff;
+        font-size: 1.5em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        margin: 0 auto;
+        margin-top: -60px;
+      }
+
+      #startButton:hover {
+        background-color: #218c53;
+      }
+
+      #alertMessage {
+        color: red;
+        font-weight: bold;
+        margin-top: 20px;
+      }
+
+      #backButton {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: #e74c3c;
+        color: #fff;
+        font-size: 1.5em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        margin-left: 760px;
+        margin-top: -62px;
+      }
+
+      #backButton:hover {
+        background-color: #c0392b;
+      }
+
+      #restartButton {
+        width: 120px;
+        height: 40px;
+        /* background-color: #34495e; */
+        /* color: #fff; */
+        font-size: 1.2em;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        margin-top: 10px;
+        background: none;
+      }
+      .navbar {
+        width: 100%;
+        height: 100px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 50px;
+      }
+      .navbar a {
+        text-decoration: none;
+        font-size: 40px;
+        color: teal;
+      }
+
+      #restartButton:hover {
+        /* background-color: #2c3e50; */
+      }
+    </style>
+  </head>
+  <body>
+    <div class="navbar">
+      <a href="../index.html">Home</a>
+      <a href="./Stopwatch.html">Stopwatch</a>
+      <a href="./Timer.html">Timer</a>
+    </div>
+    <div id="timer"></div>
+    <div id="timerButtons"></div>
+    <div id="startButton" onclick="startTimer()">
+      <img width="30px" src="../assects/play-icon.png" alt="" />
+    </div>
+    <div id="backButton" onclick="removeLastDigit()">
+      <img
+        width="30px"
+        src="https://cdn-icons-png.flaticon.com/512/2099/2099190.png"
+        alt=""
+      />
+    </div>
+    <div id="alertMessage"></div>
+    <button id="restartButton" onclick="restartTimer()">
+      <img width="80px" src="../assects//download.png" alt="" />
+    </button>
+
+    <script>
+      let timerInterval;
+      let timerDuration;
+      let timerAlert = false;
+      let selectedHours = 0;
+      let selectedMinutes = 0;
+      let selectedSeconds = 0;
+      let audio;
+
+      function createTimerButtons() {
+        const timerButtonsContainer = document.getElementById("timerButtons");
+        timerButtonsContainer.innerHTML = "";
+
+        for (let i = 1; i <= 9; i++) {
+          const button = document.createElement("div");
+          button.className = "timer-button";
+          button.textContent = i;
+          button.addEventListener("click", () => addDigit(i));
+          timerButtonsContainer.appendChild(button);
+        }
+
+        // Add 0 button
+        const zeroButton = document.createElement("div");
+        zeroButton.className = "timer-button";
+        zeroButton.textContent = "0";
+        zeroButton.addEventListener("click", () => addDigit(0));
+        timerButtonsContainer.appendChild(zeroButton);
+
+        // Add Back button
+        const backButton = document.getElementById("backButton");
+        backButton.addEventListener("click", removeLastDigit);
+      }
+
+      function addDigit(digit) {
+        if (
+          selectedHours === 0 &&
+          selectedMinutes === 0 &&
+          selectedSeconds === 0
+        ) {
+          resetTimer();
+        }
+
+        const currentInput =
+          selectedHours * 100 + selectedMinutes * 10 + selectedSeconds;
+        const newInput = currentInput * 10 + digit;
+
+        // Limit the timer to a maximum of 99 hours, 59 minutes, and 59 seconds
+        if (newInput <= 9959) {
+          const inputString = newInput.toString().padStart(4, "0");
+          selectedHours = parseInt(inputString[0] + inputString[1], 10);
+          selectedMinutes = parseInt(inputString[2], 10);
+          selectedSeconds = parseInt(inputString[3], 10);
+          updateTimerDisplay();
+        }
+      }
+
+      function updateTimerDisplay() {
+        const timerDisplay = document.getElementById("timer");
+        timerDisplay.textContent = `${selectedHours}h ${selectedMinutes}m ${selectedSeconds}s`;
+      }
+
+      function removeLastDigit() {
+        const currentInput =
+          selectedHours * 100 + selectedMinutes * 10 + selectedSeconds;
+        const newInput = Math.floor(currentInput / 10);
+
+        const inputString = newInput.toString().padStart(4, "0");
+        selectedHours = parseInt(inputString[0] + inputString[1], 10);
+        selectedMinutes = parseInt(inputString[2], 10);
+        selectedSeconds = parseInt(inputString[3], 10);
+        updateTimerDisplay();
+      }
+
+      function resetTimer() {
+        selectedHours = 0;
+        selectedMinutes = 0;
+        selectedSeconds = 0;
+        updateTimerDisplay();
+      }
+
+      function restartTimer() {
+        stopTimer();
+        resetTimer();
+        document.getElementById("alertMessage").textContent = "";
+        if (audio) {
+          audio.pause();
+          audio.currentTime = 0;
+        }
+      }
+
+      function startTimer() {
+        stopTimer(); // Stop any existing timers
+        timerDuration =
+          selectedHours * 3600 + selectedMinutes * 60 + selectedSeconds;
+
+        if (timerDuration > 0) {
+          timerInterval = setInterval(updateTimer, 1000);
+          timerAlert = false;
+          document.getElementById("alertMessage").textContent = "";
+        } else {
+          document.getElementById("alertMessage").textContent =
+            "Please set a valid timer duration.";
+        }
+      }
+
+      function updateTimer() {
+        if (timerDuration > 0) {
+          timerDuration--;
+          const hours = Math.floor(timerDuration / 3600);
+          const minutes = Math.floor((timerDuration % 3600) / 60);
+          const seconds = timerDuration % 60;
+          const timerString = `${hours.toString().padStart(2, "0")}h ${minutes
+            .toString()
+            .padStart(2, "0")}m ${seconds.toString().padStart(2, "0")}s`;
+          document.getElementById("timer").textContent = timerString;
+        } else {
+          clearInterval(timerInterval);
+          document.getElementById("timer").textContent = "00h 00m 00s";
+          if (!timerAlert) {
+            document.getElementById("alertMessage").textContent = "Time's up!";
+            playAlertSound();
+            timerAlert = true;
+          }
+        }
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        document.getElementById(
+          "timer"
+        ).textContent = `${selectedHours}h ${selectedMinutes}m ${selectedSeconds}s`;
+        document.getElementById("alertMessage").textContent = "";
+      }
+
+      function playAlertSound() {
+        audio = new Audio(
+          "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+        );
+        audio.play();
+      }
+
+      // Initialize the timer buttons
+      createTimerButtons();
+
+      // Add event listener to the start button
+      const startButton = document.getElementById("startButton");
+      startButton.addEventListener("click", startTimer);
+    </script>
+  </body>
+</html>
